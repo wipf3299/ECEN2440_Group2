@@ -3,6 +3,10 @@ from machine import Pin, PWM, Timer
 from ir_rx.nec import NEC_8 # Use the NEC 8-bit class
 from ir_rx.print_error import print_error # for debugging
 
+global current_direction
+global previous_direction
+previous_direction = current_direction = -1
+
 pwm_rate = 2000
 pwm = min(max(int(2**16 * abs(1)), 0), 65535)
 
@@ -12,7 +16,9 @@ m1_ain2_en = PWM(13, freq = pwm_rate, duty_u16 = 0)
 m2_ain1_ph = Pin(8, Pin.OUT) 
 m2_ain2_en = PWM(9, freq = pwm_rate, duty_u16 = 0)
 
-def ir_callback(data, timer, addr, _):
+def ir_callback(data, addr, _):
+    global current_direction
+    current_direction = data
     motorDirection(data)
 
 def motorDirection(data):
@@ -40,13 +46,18 @@ def motorDirection(data):
         m1_ain2_en.duty_u16(pwm)
         m2_ain1_ph.low()
         m2_ain2_en.duty_u16(pwm) 
-    
     print("Motor OFF") # Print to REPL
     m1_ain1_ph.low()
     m1_ain2_en.duty_u16(0) 
     m2_ain1_ph.low()
     m2_ain2_en.duty_u16(0) 
 
+def timer_callback(timer):
+    global previous_direction
+    if (current_direction != previous_direction):
+        print("Update Direction")
+        previous_direction = current_direction
+        motorDirection(current_direction)
 
 # Setup the IR receiver
 ir_pin = Pin(17, Pin.IN, Pin.PULL_UP) # Adjust the pin number based on your wiring
