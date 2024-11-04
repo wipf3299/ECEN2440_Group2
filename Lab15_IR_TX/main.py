@@ -28,18 +28,12 @@ BUTTONS_MASK = (1 << BUTTON_X) | (1 << BUTTON_Y) | \
               (1 << BUTTON_A) | (1 << BUTTON_B) | \
               (1 << BUTTON_SELECT) | (1 << BUTTON_START)
 
-# Define LED pins
-LED_1_PIN = 12
-LED_2_PIN = 13
-LED_3_PIN = 15
-LED_4_PIN = 14
-
 tx_pin = Pin(4,Pin.OUT,value=0)
 device_addr = 0x01
 transmitter = NEC(tx_pin)
 
 # Initialize LED states
-led_states = {
+button_states = {
    BUTTON_A: False,
    BUTTON_B: False,
    BUTTON_X: False,
@@ -63,26 +57,17 @@ def read_buttons():
    """Read and return the state of each button."""
    return seesaw_device.digital_read_bulk(BUTTONS_MASK)
 
-def set_led(pin, state):
-   """Turn the LED connected to the given pin on or off."""
-   pin.value(state)
-
 def handle_button_press(button):
    """Toggle the corresponding LED state on button press."""
-   global led_states
-   led_states[button] = not led_states[button]
+   button_states[button] = not button_states[button]
    if button == BUTTON_A:
-    #    set_led(Pin(LED_1_PIN, Pin.OUT), led_states[button])
-        transmitter.transmit(device_addr,0x01)
+        transmitter.transmit(device_addr,0x01) # Forward
    elif button == BUTTON_B:
-    #    set_led(Pin(LED_2_PIN, Pin.OUT), led_states[button])
-        transmitter.transmit(device_addr,0x04)
+        transmitter.transmit(device_addr,0x02) # Backwards
    elif button == BUTTON_X:
-    #    set_led(Pin(LED_3_PIN, Pin.OUT), led_states[button])
-        transmitter.transmit(device_addr,0x03)
+        transmitter.transmit(device_addr,0x05) # Motors OFF
    elif button == BUTTON_Y:
-    #    set_led(Pin(LED_4_PIN, Pin.OUT), led_states[button])
-        transmitter.transmit(device_addr,0x02)
+        transmitter.transmit(device_addr,0x05) # Motors OFF
    print("Button", button, "is pressed")
 
 def main():
@@ -95,45 +80,38 @@ def main():
    joystick_threshold = 50  # Adjust threshold as needed
 
    while True:
-       current_buttons = read_buttons()
+      current_buttons = read_buttons()
 
-       # Check if button state has changed
-       for button in led_states:
-           if current_buttons & (1 << button) and not last_buttons & (1 << button):
+      # Check if button state has changed
+      for button in button_states:
+         if current_buttons & (1 << button) and not last_buttons & (1 << button):
                handle_button_press(button)
 
        # Read joystick values
-       current_x = seesaw_device.analog_read(JOYSTICK_X_PIN)
-       current_y = seesaw_device.analog_read(JOYSTICK_Y_PIN)
+      current_x = seesaw_device.analog_read(JOYSTICK_X_PIN)
+      current_y = seesaw_device.analog_read(JOYSTICK_Y_PIN)
 
-       # Check if joystick position has changed significantly
-       if abs(current_x - last_x) > joystick_threshold or abs(current_y - last_y) > joystick_threshold:
+      # Check if joystick position has changed significantly
+      if ((current_x == 0 ) and (current_y == 0)):
+          transmitter.transmit(device_addr,0x05)
+      if abs(current_x - last_x) > joystick_threshold or abs(current_y - last_y) > joystick_threshold:
            print("Joystick moved - X:", current_x, ", Y:", current_y)
            last_x, last_y = current_x, current_y
-           # Turn off all LEDs
-        #    set_led(Pin(LED_1_PIN, Pin.OUT), False)
-        #    set_led(Pin(LED_2_PIN, Pin.OUT), False)
-        #    set_led(Pin(LED_3_PIN, Pin.OUT), False)
-        #    set_led(Pin(LED_4_PIN, Pin.OUT), False)
-            
-         #   transmitter.transmit(device_addr,0x04)
 
-           # Determine which LED to turn on based on joystick direction
-           if current_y < joystick_center_y - joystick_threshold:  # Joystick moved up
-            #    set_led(Pin(LED_1_PIN, Pin.OUT), True)
+           # Determine which direction to move based off joystick
+           if current_y < joystick_center_y - joystick_threshold:    # Joystick moved up
                 transmitter.transmit(device_addr,0x01)
            elif current_y > joystick_center_y + joystick_threshold:  # Joystick moved down
-            #    set_led(Pin(LED_2_PIN, Pin.OUT), True)
-                transmitter.transmit(device_addr,0x03)
+                transmitter.transmit(device_addr,0x02)
            elif current_x < joystick_center_x - joystick_threshold:  # Joystick moved left
-            #    set_led(Pin(LED_3_PIN, Pin.OUT), True)
-                transmitter.transmit(device_addr,0x01)
-           elif current_x > joystick_center_x + joystick_threshold:  # Joystick moved right
-            #    set_led(Pin(LED_4_PIN, Pin.OUT), True)
                 transmitter.transmit(device_addr,0x03)
+           elif current_x > joystick_center_x + joystick_threshold:  # Joystick moved right
+                transmitter.transmit(device_addr,0x04)
+           elif current_x <= joystick_center_x + joystick_threshold and current_x >= joystick_center_x - joystick_threshold and current_y <= joystick_center_y + joystick_threshold and current_y >= joystick_center_y - joystick_threshold:
+                transmitter.transmit(device_addr,0x05)
 
-       last_buttons = current_buttons
-       time.sleep(0.1)  # Delay to prevent overwhelming the output
+      last_buttons = current_buttons
+      time.sleep(0.1)  # Delay to prevent overwhelming the output
 
 if __name__ == "__main__":
    main()
