@@ -28,7 +28,7 @@ BUTTONS_MASK = (1 << BUTTON_X) | (1 << BUTTON_Y) | \
               (1 << BUTTON_A) | (1 << BUTTON_B) | \
               (1 << BUTTON_SELECT) | (1 << BUTTON_START)
 
-tx_pin = Pin(4,Pin.OUT,value=0)
+tx_pin = Pin(4,Pin.OUT)
 device_addr = 0x01
 transmitter = NEC(tx_pin)
 
@@ -104,9 +104,9 @@ def main():
            elif current_y > joystick_center_y + joystick_threshold:  # Joystick moved down
                 transmitter.transmit(device_addr,0x02)
            elif current_x < joystick_center_x - joystick_threshold:  # Joystick moved left
-                transmitter.transmit(device_addr,0x03)
-           elif current_x > joystick_center_x + joystick_threshold:  # Joystick moved right
                 transmitter.transmit(device_addr,0x04)
+           elif current_x > joystick_center_x + joystick_threshold:  # Joystick moved right
+                transmitter.transmit(device_addr,0x03)
            elif current_x <= joystick_center_x + joystick_threshold and current_x >= joystick_center_x - joystick_threshold and current_y <= joystick_center_y + joystick_threshold and current_y >= joystick_center_y - joystick_threshold:
                 transmitter.transmit(device_addr,0x05)
 
