@@ -78,7 +78,7 @@ ir_pin = Pin(17, Pin.IN, Pin.PULL_UP) # Adjust the pin number based on your wiri
 ir_receiver = NEC_8(ir_pin, callback=ir_callback)
 # Optional: Use the print_error function for debugging
 ir_receiver.error_function(print_error)
-setPinDriveStrength(ir_pin, 12) # Set drive strenth to 12mA
+setPinDriveStrength(17, 12) # Set drive strenth to 12mA
 
 # Setup the timer
 timer = Timer(-1)
