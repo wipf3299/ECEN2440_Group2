@@ -1,7 +1,19 @@
 import machine
-from machine import Pin, PWM, Timer
+from machine import Pin, PWM, Timer, mem32
 from ir_rx.nec import NEC_8 # Use the NEC 8-bit class
 from ir_rx.print_error import print_error # for debugging
+
+def setPinDriveStrength(pin, mA):
+    PADS_BANK0_BASE     = 0x4001C000
+    PAD_GPIO            = PADS_BANK0_BASE + 0x04 # Add (pin * 4)
+    PAD_GPIO_MPY        = 4
+    PAD_DRIVE_BITS      = 4 # 0=2mA, 1=4mA, 2=8mA, 3=12mA   Default=1, 4mA drive
+    adr = PAD_GPIO + PAD_GPIO_MPY * pin
+    mem32[adr] &= 0xFFFFFFFF ^ ( 0b11 << PAD_DRIVE_BITS)
+    if   mA <= 2 : mem32[adr] |= 0b00 << PAD_DRIVE_BITS
+    elif mA <= 4 : mem32[adr] |= 0b01 << PAD_DRIVE_BITS
+    elif mA <= 8 : mem32[adr] |= 0b10 << PAD_DRIVE_BITS
+    else         : mem32[adr] |= 0b11 << PAD_DRIVE_BITS
 
 global current_direction 
 current_direction = -1
@@ -66,6 +78,7 @@ ir_pin = Pin(17, Pin.IN, Pin.PULL_UP) # Adjust the pin number based on your wiri
 ir_receiver = NEC_8(ir_pin, callback=ir_callback)
 # Optional: Use the print_error function for debugging
 ir_receiver.error_function(print_error)
+setPinDriveStrength(ir_pin, 12) # Set drive strenth to 12mA
 
 # Setup the timer
 timer = Timer(-1)
