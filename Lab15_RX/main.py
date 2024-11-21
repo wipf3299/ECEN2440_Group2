@@ -28,7 +28,6 @@ m2_ain1_ph = Pin(8, Pin.OUT)
 m2_ain2_en = PWM(9, freq = pwm_rate, duty_u16 = 0)
 
 def ir_callback(data, addr, _):
-    global current_direction
     current_direction = data
     motorDirection(data)
 

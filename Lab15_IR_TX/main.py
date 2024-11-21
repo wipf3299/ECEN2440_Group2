@@ -107,7 +107,7 @@ def main():
                 transmitter.transmit(device_addr,0x04)
            elif current_x > joystick_center_x + joystick_threshold:  # Joystick moved right
                 transmitter.transmit(device_addr,0x03)
-           elif current_x <= joystick_center_x + joystick_threshold and current_x >= joystick_center_x - joystick_threshold and current_y <= joystick_center_y + joystick_threshold and current_y >= joystick_center_y - joystick_threshold:
+           else
                 transmitter.transmit(device_addr,0x05)
 
       last_buttons = current_buttons
