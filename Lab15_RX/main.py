@@ -57,17 +57,28 @@ def motorRight():
     m2_ain1_ph.low()
     m2_ain2_en.duty_u16(pwm) 
 
-def motorDirection(data):
-    if data == 0x01:
-        motorForwards()
-    elif data == 0x02:
-        motorBackwards()
-    elif data == 0x03: 
-        motorLeft()
-    elif data == 0x04: 
-        motorRight()
+def toggleBoost():
+    print("Toggle BOOST")
+    global pwm
+    if pwm > 65000:
+        pwm /= 4
     else:
+        pwm *= 4
+
+def motorDirection(dir):
+    if dir == 0x01:
+        motorForwards()
+    elif dir == 0x02:
+        motorBackwards()
+    elif dir == 0x03: 
+        motorLeft()
+    elif dir == 0x04: 
+        motorRight()
+    elif dir == 0x05:
         stopMotors()
+    elif dir == 0x06:
+        toggleBoost()
+    
         
 def handleSignal(signal):
     if signal == 0x1: # 0b0001        
@@ -75,29 +86,28 @@ def handleSignal(signal):
     elif signal == 0x2: # 0b0010
         motorBackwards()
     elif signal == 0x4: # 0b0100
-        motorLeft()
-    elif signal == 0x8: # 0b1000
         motorRight()
-    elif signal == 0xf: # 0b1111
+    elif signal == 0x8: # 0b1000
+        motorLeft()
+    elif signal == 0x6: # 0b0110
         stopMotors()
+    elif signal == 0x3:
+        toggleBoost()
 
 def ir_callback(data, addr, _):
     global current_direction
     current_direction = data
-    motorDirection(data)
 
 def timer_callback(timer):
     if rf:
-        signal = 0
+        signal = 0b0000
         signal = ((signal << 1) | d3.value())
         signal = ((signal << 1) | d2.value())
         signal = ((signal << 1) | d1.value())
         signal = ((signal << 1) | d0.value())
         handleSignal(signal)
     else:
-        global current_direction
-        if current_direction == 0x05:
-            stopMotors()
+        motorDirection(current_direction)
 
 # Setup the IR receiver
 ir_pin = Pin(18, Pin.IN, Pin.PULL_UP) 
