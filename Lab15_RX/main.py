@@ -1,9 +1,4 @@
-import machine
-from machine import Pin, PWM, Timer, mem32
-from ir_rx.nec import NEC_8 # Use the NEC 8-bit class
-from ir_rx.print_error import print_error # for debugging
-
-rf = True # Boolean to toggle between RF and IR
+alse # Boolean to toggle between RF and IR
 
 global current_direction # Used for IR control
 current_direction = -1
@@ -57,13 +52,15 @@ def motorRight():
     m2_ain1_ph.low()
     m2_ain2_en.duty_u16(pwm) 
 
-def toggleBoost():
-    print("Toggle BOOST")
+def boostON():
+    print("Boost ON")
     global pwm
-    if pwm > 65000:
-        pwm /= 4
-    else:
-        pwm *= 4
+    pwm = 65535//4
+
+def boostOFF():
+    print("Boost OFF")
+    global pwm
+    pwm = 65535
 
 def motorDirection(dir):
     if dir == 0x01:
@@ -77,7 +74,9 @@ def motorDirection(dir):
     elif dir == 0x05:
         stopMotors()
     elif dir == 0x06:
-        toggleBoost()
+        boostON()
+    elif dir == 0x07:
+        boostOFF()
     
         
 def handleSignal(signal):
@@ -91,8 +90,10 @@ def handleSignal(signal):
         motorLeft()
     elif signal == 0x6: # 0b0110
         stopMotors()
-    elif signal == 0x3:
-        toggleBoost()
+    elif signal == 0x3: # 0b0011
+        boostON()
+    elif signal == 0x5: # 0b0101
+        boostOFF()
 
 def ir_callback(data, addr, _):
     global current_direction
@@ -116,6 +117,10 @@ ir_receiver = NEC_8(ir_pin, callback=ir_callback)
 # Setup the timer
 timer = Timer(-1)
 timer.init(period=100, mode=Timer.PERIODIC, callback=timer_callback)
+
+# Turn on on-board LED to ensure Pico is receiving power
+led = Pin(25, Pin.OUT)
+led.value(1)
 
 # Main loop 
 while True:
